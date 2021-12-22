@@ -1,77 +1,45 @@
 #include <GuiConstantsEx.au3>
 #include <WindowsConstants.au3>
-
 #include <ProgressConstants.au3>
 #include <SendMessage.au3>
 #include <GuiComboBox.au3>
+#include <ButtonConstants.au3>
+#include <File.au3>
+
+#include <Array.au3>
+#include <Constants.au3>
 
 #include "GUIListViewEx.au3"
 
-Global $array_List;
+Global $array_List ; ArrayList which shadows the ListView
 
-; Create GUI
-$hGUI 			= GUICreate("Convert Video to Theora", 640, 430)
+; Creating GUI Elements
+Opt("WinTitleMatchMode",2)
+#include "Video2TheoraGraphicElements.au3"
+; Handling the commandline executable
+#include "Video2TheoraGetCLExe.au3"
 
-; Create ListView
-GUICtrlCreateLabel("List of Video Files you want to Convert to theora", 120, 15, 500, 20)
-$hListView 		= _GUICtrlListView_Create($hGUI, "Video Files to Convert", 120, 40, 500, 300, BitOR($LVS_SHOWSELALWAYS, $LVS_REPORT, $WS_BORDER))
-_GUICtrlListView_SetExtendedListViewStyle($hListView, $LVS_EX_FULLROWSELECT)
-_GUICtrlListView_SetColumnWidth($hListView, 0, 500)
-_GUICtrlListView_SetInsertMarkColor($hListView, 0)
-$listView_index = _GUIListViewEx_Init($hListView, $array_List, 0, 0x00FF00) ; Initiate LVEx - no count - green insert parameter
+HotKeySet("{F1}", "onHelp")
 
-; Creating menu Items
-$fileMenu 			= GUICtrlCreateMenu("File")
-$addVideoMenuItem 	= GUICtrlCreateMenuItem("Add Video Files", $fileMenu)
-$convertMenuItem 	= GUICtrlCreateMenuItem("Convert Video Files", $fileMenu)
-$exitMenuItem 		= GUICtrlCreateMenuItem("Exit", $fileMenu)
-$helpMenu 			= GUICtrlCreateMenu("Help")
-$aboutMenuItem 		= GUICtrlCreateMenuItem("About", $helpMenu)
-GUICtrlSetOnEvent($aboutMenuItem, "onAbout")
-
-; Creating buttons
-; TODO add small & nice icons (famfam?)
-$hInsert_Button 	= GUICtrlCreateButton("Add", 10, 40, 100, 30)
-$hDelete_Button 	= GUICtrlCreateButton("Delete", 10, 80, 100, 30)
-$hUp_Button 		= GUICtrlCreateButton("Move Up", 10, 140, 100, 30)
-$hDown_Button 		= GUICtrlCreateButton("Move Down", 10, 180, 100, 30)
-$hConvert_Button 	= GUICtrlCreateButton("Convert", 420, 370, 100, 30)
-$hExit_Button 		= GUICtrlCreateButton("Exit", 530, 370, 100, 30)
-
-; Creating Quality Components
-$hLabel2 			= GUICtrlCreateLabel( "Video Quality", 120, 360, 100, 15)
-$videoQuality		= GUICtrlCreateCombo( "1", 120, 380, 100, 20)
-GUICtrlSetData( $videoQuality, "2|3|4|5|6|7|8|9|10", "6")
-GUICtrlSetTip( $videoQuality, "Please Choose Video Quality ([Low]1 - 10[High])")
-
-$hLabel3 			= GUICtrlCreateLabel( "Audio Quality", 240, 360, 100, 15)
-$audioQuality		= GUICtrlCreateCombo( "-2", 240, 380, 100, 20)
-GUICtrlSetData( $audioQuality, "-1|0|1|2|3|4|5|6|7|8|9|10", "1")
-GUICtrlSetTip( $audioQuality, "Please Choose Audio Quality ([Low]-2 - 10[High])")
-
-
-GUISetState()
-
-; Register for dragging
-_GUIListViewEx_DragRegister()
-
-; GUI's Main Logic
+; Main Logic
 While 1
 	Switch GUIGetMsg()
-		Case $hDelete_Button
+		Case $deleteBtn
 			_GUIListViewEx_Delete()
-		Case $hUp_Button
+		Case $upBtn
 			_GUIListViewEx_Up()
-		Case $hDown_Button
+		Case $downBtn
 			_GUIListViewEx_Down()
 			
-		Case $hInsert_Button, $addVideoMenuItem
-		   onBrowse()
-	    Case $hConvert_Button, $convertMenuItem
+		Case $insertBtn, $addVideoMenuItem
+		  	onBrowse()
+	    Case $convertbtn, $convertMenuItem
 			onConvert()
+		Case $helpMenuItem
+			onHelp()
 	    Case $aboutMenuItem
 			onAbout()
-	    Case $GUI_EVENT_CLOSE, $hExit_Button, $exitMenuItem
+	    Case $GUI_EVENT_CLOSE, $exitBtn, $exitMenuItem
 			Exit
 	EndSwitch
 WEnd
@@ -83,7 +51,6 @@ WEnd
 Func onBrowse()
 	; Multiple filter group
    $message 			= "Hold down Ctrl or Shift to choose multiple files."
-   ;$chosenFiles 		= FileOpenDialog($message, @WorkingDir & "", "Videos (*.avi;*.dv)", 1 + 4)
    $chosenFiles 		= FileOpenDialog($message, @WorkingDir & "", "All Video Formats (*.*)", 1 + 4)
    $video2convertArr 	= StringSplit($chosenFiles, "|")
    
@@ -102,32 +69,50 @@ EndFunc   ;==>onBrowse
 
 ; Iterates over the list and converts all of the video files
 Func onConvert()
-   ; TODO Auto detect the actual exe file and have an option to define it manually
-   $files2convert 		= _GUIListViewEx_Return_Array($listView_index);
-   $number_of_videos 	= UBound($files2convert)
-   $videoQualityToUse	= GUICtrlRead($videoQuality)
-   $audioQualityToUse	= GUICtrlRead($audioQuality)
+	$files2convert 		= _GUIListViewEx_Return_Array($listView_index);
+	$number_of_videos 	= UBound($files2convert)
    
    if $number_of_videos > 1 Then
 	  ProgressOn("Video to Theora", "Converting " & $number_of_videos & " Files", "Working...")
 	  For $i = 0 to $number_of_videos - 1
          ProgressSet(($i+1) * 100 / ($i + 2))
-		 RunWait(@WorkingDir & '\ffmpeg2theora-0.29.exe --optimize -v ' & $videoQualityToUse & ' -a ' & $audioQualityToUse & ' "' & $files2convert[$i] & '"', "", @SW_HIDE)
+         commandLineConvert($files2convert[$i])
       Next
 	  closeProgressBarNicely()
    ElseIf $number_of_videos = 1 Then
 	  ProgressOn("Converting Video", "Converting your Video File", "Working...")
 	  ProgressSet(50)
-	  RunWait(@WorkingDir & '\ffmpeg2theora-0.29.exe --optimize -v ' & $videoQualityToUse & ' -a ' & $audioQualityToUse & ' "' & $files2convert[0] & '"', "", @SW_HIDE)
+	  commandLineConvert($files2convert[0])
 	  closeProgressBarNicely()
    Else
 	  MsgBox(48, "No Video File Added to the List", "Please add video file/s you want to convert to the main application's list", 10)
    EndIf
-EndFunc   ;==>onConvert
+EndFunc
 
+; Display this message box when the "Help" is clicked
+Func onHelp()
+	$helpMessage = "How to convert any Video to the Theeora format (.ogv)?" & @LF & @LF 
+	$helpMessage &= "1. Add files to the list by clicking on the spying glass button" & @LF
+	$helpMessage &= "2. (Optional) Add as many files as you want - they will be converted one after the after" & @LF
+	$helpMessage &= "3. (Optional) Sort the video files in the list - they will be converted one after the other in the same order as listed" & @LF 
+	$helpMessage &= "4. (Optional) Choose custom quality parameters for the audio & video" & @LF
+	$helpMessage &= "5. Click the 'Convert' button" & @LF
+	$helpMessage &= "6. Go to the folder where your original video is stored and enjoy your new video files (same filename with .ogv extension)"
+
+	MsgBox(0, "How to use Video to Theora v2.0", $helpMessage)
+EndFunc
+
+; Display this message box when the "About" is clicked
 Func onAbout()
-   MsgBox(0, "About Video to Theora v1.0", "Simple GUI which keeps converting video files to the Theora format easy." & @LF & @LF & "Initially created for the 3d Remake of King's Quest IV" & @LF & @LF & "http://unicorntales.org" & @LF & @LF & "This tool is free for the general use")
-EndFunc   ;==>onAbout
+	$aboutMessage = "Simple GUI which keeps converting video files to the Theora format easy." & @LF & @LF 
+	$aboutMessage &= "Initially created for the 3d Remake of King's Quest IV" & @LF
+	$aboutMessage &= "http://unicorntales.org" & @LF & @LF 
+	$aboutMessage &= "This tool is free for the general use" & @LF & @LF & @LF 
+	$aboutMessage &= "Please send me an email about any bug or feature request or just to say thanks: chaiware@gmail.com" & @LF & @LF
+	$aboutMessage &= "Video2Theora official site: http://chaiware.org/about-me/commandline-wra/video-theora/"
+
+	MsgBox(0, "About Video to Theora v2.0", $aboutMessage)
+EndFunc
 
 ; Private Functions
 Func closeProgressBarNicely()
@@ -135,4 +120,23 @@ Func closeProgressBarNicely()
    Sleep(750)
    ProgressOff()
    MsgBox(4096, "Video Converted", "Video was successfully converted to the Theora format")
+EndFunc
+
+; The Actual CommandLine running function
+Func commandLineConvert($file2Convert)
+	$videoQualityToUse	= GUICtrlRead($videoQuality)
+	$audioQualityToUse	= GUICtrlRead($audioQuality)
+	$isDebugMode		= GUICtrlRead($debugMode)
+
+	$commandLineCMD 	= $commandlineEXE & ' --optimize -v ' & $videoQualityToUse & ' -a ' & $audioQualityToUse & ' "' & $file2Convert & '"'
+	
+	if $isDebugMode = $GUI_CHECKED Then
+		$cmdPID = Run("cmd", "", @SW_SHOWNORMAL)
+		WinWaitActive("cmd.exe")
+		$hDos 	= WingetHandle("cmd.exe")
+		SendKeepActive($hDos)
+		Send($commandLineCMD & @CRLF)
+	Else			
+		RunWait($commandLineCMD, "", @SW_HIDE)	
+	EndIf
 EndFunc
