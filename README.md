@@ -23,3 +23,10 @@ This is where this simple GUI wrapper comes into place, it uses the command line
 
 How to use it?
 Start it, add files to convert, choose the quality you want and click “Convert” that’s it – Keep it Simple.
+
+### Screenshots
+|       |      |
+|------------|-------------|
+| <img src="https://github.com/Chaiavi/video-to-theora/blob/main/Screenshots/Video2Theora%20with%20About%20Box.jpg">| <img src="https://github.com/Chaiavi/video-to-theora/blob/main/Screenshots/Video2Theora%20Selecting%20Video%20Files.jpg"> |
+| <img src="https://github.com/Chaiavi/video-to-theora/blob/main/Screenshots/Video2Theora%20with%20Files%20Selected.jpg">| <img src="https://github.com/Chaiavi/video-to-theora/blob/main/Screenshots/Video2theora%20Converting%20Files.jpg"> |
+| <img src="https://github.com/Chaiavi/video-to-theora/blob/main/Screenshots/Video2theora%20Converting%20Files%20in%20Debug%20mode.jpg">| <img src="https://github.com/Chaiavi/video-to-theora/blob/main/Screenshots/Video2theora%20with%20help%20open.jpg"> |
