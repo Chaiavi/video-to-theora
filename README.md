@@ -1,3 +1,9 @@
+# PROJECT ARCHIVED
+This project is Archived and won't get any new updates.
+It was a good project and for those who need Theora files it can be a good place for a reasonable video converter.
+No changes were made in the last years to this project and none are planned, thus I am archiving it.
+Which just means this project is staying in its current (good) state as a read only project.
+
 # video-to-theora
 **Autoit GUI Wrapper for converting any video file to a Theora codec (.ogv) video file**
 
